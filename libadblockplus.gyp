@@ -13,9 +13,7 @@
       }
     }
   ]],
-  'includes': ['third_party/v8/build/features.gypi',
-               'third_party/v8/build/toolchain.gypi',
-               'shell/shell.gyp'],
+  'includes': ['shell/shell.gyp'],
   'targets': [{
     'target_name': 'ensure_dependencies',
     'type': 'none',
@@ -29,7 +27,6 @@
   {
     'target_name': 'libadblockplus',
     'type': '<(library)',
-    'dependencies': ['ensure_dependencies'],
     'include_dirs': [
       'include',
       'third_party/v8/include',
@@ -58,17 +55,26 @@
       'include_dirs': ['include']
     },
     'conditions': [
-      ['OS=="android"', {
+      ['OS=="linux"', {
         'link_settings': {
           'libraries': [
-            'android_<(ANDROID_ARCH).release/obj.target/tools/gyp/libv8_base.<(ANDROID_ARCH).a',
-            'android_<(ANDROID_ARCH).release/obj.target/tools/gyp/libv8_snapshot.a',
-          ],
-        },
+            'v8/out/<(CONFIGURATION_NAME)/libv8_libplatform.a',
+            'v8/out/<(CONFIGURATION_NAME)/libv8_base.a',
+            'v8/out/<(CONFIGURATION_NAME)/libv8_nosnapshot.a',
+            'v8/out/<(CONFIGURATION_NAME)/libv8_libbase.a',
+            'v8/out/<(CONFIGURATION_NAME)/libv8_libsampler.a',
+          ]
+        }
+      }],
+      ['OS=="android"', {
+        'user_libraries': [
+          'android_arm.release/libv8_libplatform.a',
+          'android_arm.release/libv8_base.a',
+          'android_arm.release/libv8_nosnapshot.a',
+          'android_arm.release/libv8_libbase.a',
+          'android_arm.release/libv8_libsampler.a',
+        ],
         'standalone_static_library': 1, # disable thin archives
-      }, {
-        'dependencies': ['third_party/v8/tools/gyp/v8.gyp:v8', 'third_party/v8/tools/gyp/v8.gyp:v8_libplatform',],
-        'export_dependent_settings': ['third_party/v8/tools/gyp/v8.gyp:v8', 'third_party/v8/tools/gyp/v8.gyp:v8_libplatform'],
       }],
       ['have_curl==1',
         {

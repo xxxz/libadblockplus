@@ -73,7 +73,9 @@ namespace
 AdblockPlus::ScopedV8Isolate::ScopedV8Isolate()
 {
   V8Initializer::Init();
-  isolate = v8::Isolate::New();
+  v8::Isolate::CreateParams isolateParams;
+  isolateParams.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+  isolate = v8::Isolate::New(isolateParams);
 }
 
 AdblockPlus::ScopedV8Isolate::~ScopedV8Isolate()

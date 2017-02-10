@@ -35,7 +35,6 @@ namespace v8
   class Isolate;
   class Value;
   class Context;
-  template<class T> class Handle;
   template<typename T> class FunctionCallbackInfo;
   typedef void(*FunctionCallback)(const FunctionCallbackInfo<v8::Value>& info);
 }
@@ -263,7 +262,7 @@ namespace AdblockPlus
     FileSystemPtr fileSystem;
     WebRequestPtr webRequest;
     LogSystemPtr logSystem;
-    std::unique_ptr<v8::UniquePersistent<v8::Context>> context;
+    std::unique_ptr<v8::Global<v8::Context>> context;
     EventMap eventCallbacks;
   };
 }

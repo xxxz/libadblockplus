@@ -26,9 +26,8 @@
 namespace v8
 {
   class Value;
-  template<class T> class Handle;
   template<class T> class Local;
-  template<class T> class UniquePersistent;
+  template<class T> class Global;
 }
 
 namespace AdblockPlus
@@ -136,9 +135,9 @@ namespace AdblockPlus
   protected:
     JsEnginePtr jsEngine;
   private:
-    JsValue(JsEnginePtr jsEngine, v8::Handle<v8::Value> value);
-    void SetProperty(const std::string& name, v8::Handle<v8::Value> val);
-    std::unique_ptr<v8::UniquePersistent<v8::Value>> value;
+    JsValue(JsEnginePtr jsEngine, v8::Local<v8::Value> value);
+    void SetProperty(const std::string& name, v8::Local<v8::Value> val);
+    std::unique_ptr<v8::Global<v8::Value>> value;
   };
 }
 
