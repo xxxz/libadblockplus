@@ -55,7 +55,6 @@ def overridden_Write(self, qualified_target, base_path, output_filename, spec, c
     self._abp_configs = configs
     orig_MakefileWriter_Write(self, qualified_target, base_path, output_filename, spec, configs, part_of_all)
     delattr(self, "_abp_configs")
-    print spec
 
 def overridden_WriteAndroidNdkModuleRule(self, module_name, all_sources, link_deps):
     for config in self._abp_configs:
@@ -80,25 +79,8 @@ def overridden_WriteAndroidNdkModuleRule(self, module_name, all_sources, link_de
     orig_MakefileWriter_WriteAndroidNdkModuleRule(self, module_name, all_sources, link_deps)
     self.WriteList = orig_WriteList
 
-#    libraries = spec.get('libraries')
-#    if libraries:
-#      # Remove duplicate entries
-#      libraries = gyp.common.uniquer(libraries)
-#      if self.flavor == 'mac':
-#        libraries = self.xcode_settings.AdjustLibraries(libraries)
-#    self.WriteList(libraries, 'LIBS')
-#    print libraries
-#
-
 MakefileWriter.Write = overridden_Write
 MakefileWriter.WriteAndroidNdkModuleRule = overridden_WriteAndroidNdkModuleRule
-
-#def _FixPath(path):
-#    if path == 'CORE' or path == 'EXPERIMENTAL' or path == 'off':
-#        # Don't touch js2c parameters
-#        return path
-#    return orig_fix_path(path)
-#gyp.generator.msvs._FixPath = _FixPath
 
 if __name__ == '__main__':
     gyp.main(sys.argv[1:])

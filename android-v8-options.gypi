@@ -5,7 +5,9 @@
     'arm_float_abi%': 'default',
     'arm_thumb%': 'default',
     'want_separate_host_toolset%': 1,
-    'android_ndk_root': '/media/sergz/android-ndk/android-ndk-r12b/',
+    'android_ndk_root': '<!(echo ${ANDROID_NDK_ROOT})',
+    'clang_dir': '/usr/',
+    'make_clang_dir': '/usr/',
   },
-  'includes': ['common.gypi'],
+  'includes': ['v8.gypi'],
 }

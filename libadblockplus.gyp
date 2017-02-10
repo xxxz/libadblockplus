@@ -12,48 +12,57 @@
         'have_curl': '<!(python check_curl.py)'
       }
     }
+  ],
+  [
+    'OS=="win"', {
+      'targets': [{
+        'target_name': 'ensure_dependencies',
+        'type': 'none',
+        'actions': [{
+          'action_name': 'ensure_dependencies',
+          'inputs': ['ensure_dependencies.py'],
+          'outputs': ['ensure_dependencies_phony_output'],
+          'action': ['python', 'ensure_dependencies.py'],
+        }]
+      },
+      {
+        'target_name': 'build-v8',
+        'type': 'none',
+        'dependencies': ['ensure_dependencies'],
+        'actions': [{
+          'action_name': 'build-v8',
+          'inputs': ['build-v8.cmd'],
+          'outputs': [
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libplatform.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_0.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_1.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_2.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_3.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libbase.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libsampler.lib',
+            'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_nosnapshot.lib',
+          ],
+          'action': [
+            'cmd',
+            '/C',
+            'build-v8.cmd',
+            '<(target_arch)',
+            '<(CONFIGURATION_NAME)'
+          ]
+        }],
+      }]
+    }
   ]],
   'includes': ['shell/shell.gyp'],
   'targets': [{
-    'target_name': 'ensure_dependencies',
-    'type': 'none',
-    'actions': [{
-      'action_name': 'ensure_dependencies',
-      'inputs': ['ensure_dependencies.py'],
-      'outputs': ['ensure_dependencies_phony_output'],
-      'action': ['python', 'ensure_dependencies.py'],
-    }]
-  },
-  {
-    'target_name': 'build-v8',
-    'type': 'none',
-    'dependencies': ['ensure_dependencies'],
-    'actions': [{
-      'action_name': 'build-v8',
-      'inputs': ['build-v8.cmd'],
-      'outputs': [
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libplatform.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_0.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_1.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_2.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_3.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libbase.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libsampler.lib',
-        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_nosnapshot.lib',
-      ],
-      'action': [
-        'cmd',
-        '/C',
-        'build-v8.cmd',
-        '<(target_arch)',
-        '<(CONFIGURATION_NAME)'
-      ]
-    }],
-  },
-  {
     'target_name': 'libadblockplus',
     'type': '<(library)',
-    'dependencies': ['build-v8'],
+    'conditions': [[
+      'OS=="win"', {
+        'dependencies': ['build-v8'],
+      }
+    ]],
+    'xcode_settings':{},
     'include_dirs': [
       'include',
       'third_party/v8/include',
@@ -87,7 +96,7 @@
       },
     },
     'conditions': [
-      ['OS=="linux"', {
+      ['OS=="linux" or OS=="mac"', {
         'link_settings': {
           'libraries': [
             'v8/out/<(CONFIGURATION_NAME)/libv8_libplatform.a',
@@ -115,11 +124,11 @@
       }],
       ['OS=="android"', {
         'user_libraries': [
-          'android_arm.release/libv8_libplatform.a',
-          'android_arm.release/libv8_base.a',
-          'android_arm.release/libv8_nosnapshot.a',
-          'android_arm.release/libv8_libbase.a',
-          'android_arm.release/libv8_libsampler.a',
+          'android_<(target_arch).release/libv8_libplatform.a',
+          'android_<(target_arch).release/libv8_base.a',
+          'android_<(target_arch).release/libv8_nosnapshot.a',
+          'android_<(target_arch).release/libv8_libbase.a',
+          'android_<(target_arch).release/libv8_libsampler.a',
         ],
         'standalone_static_library': 1, # disable thin archives
       }],
@@ -214,6 +223,7 @@
   {
     'target_name': 'tests',
     'type': 'executable',
+    'xcode_settings': {},
     'dependencies': [
       'third_party/googletest.gyp:googletest_main',
       'libadblockplus'

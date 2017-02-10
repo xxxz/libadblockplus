@@ -1,15 +1,22 @@
-ARCH := x64
+HOST_ARCH=$(shell python ./third_party/v8/gypfiles/detect_v8_host_arch.py)
+ARCH := ${HOST_ARCH}
+
+ifndef OS
+  raw_OS = $(shell uname -s)
+  ifeq (${raw_OS},Linux)
+    OS=linux
+  else ifeq (${raw_OS},Darwin)
+    OS=mac
+  endif
+endif
 
 ANDROID_PARAMETERS = OS=android
 ifneq ($(ANDROID_ARCH),)
 ifeq ($(ANDROID_ARCH),arm)
 ANDROID_PARAMETERS += target_arch=arm
-#ANDROID_PARAMETERS += target_arch=arm android_target_arch=arm
-#ANDROID_PARAMETERS += arm_neon=0 armv7=0 arm_fpu=off vfp3=off
-#ANDROID_PARAMETERS += arm_float_abi=default
 ANDROID_ABI = armeabi-v7a
 else ifeq ($(ANDROID_ARCH),ia32)
-#ANDROID_PARAMETERS += target_arch=x86 android_target_arch=x86
+ANDROID_PARAMETERS += target_arch=x86 android_target_arch=x86
 ANDROID_ABI = x86
 else
 $(error "Unsupported Android architecture: $(ANDROID_ARCH))
@@ -19,11 +26,20 @@ endif
 
 TEST_EXECUTABLE = build/out/Debug/tests
 
-.PHONY: all test clean docs v8_android_multi android_multi android_x86 \
-	android_arm
+.PHONY: all test clean docs v8 v8_android_multi android_multi android_x86 \
+	android_arm ensure_dependencies
 
-all:
-	GYP_DEFINES=OS=linux third_party/gyp/gyp --depth=. -f make -I common.gypi --generator-output=build -Dtarget_arch=$(ARCH) -Dhost_arch=$(shell python ./third_party/v8/gypfiles/detect_v8_host_arch.py) libadblockplus.gyp
+.DEFAULT_GOAL:=all
+
+ensure_dependencies:
+	python ensure_dependencies.py
+
+v8: ensure_dependencies
+	third_party/gyp/gyp --depth=. -f make -I v8.gypi --generator-output=build/v8 -Dtarget_arch=${ARCH} -Dhost_arch=${HOST_ARCH} third_party/v8/src/v8.gyp
+	make -C build/v8 v8_maybe_snapshot v8_libplatform v8_libsampler
+
+all: v8
+	GYP_DEFINES=OS=${OS} third_party/gyp/gyp --depth=. -f make -I libadblockplus.gypi --generator-output=build -Dtarget_arch=${ARCH} -Dhost_arch=${HOST_ARCH} libadblockplus.gyp
 	$(MAKE) -C build
 
 test: all
@@ -51,7 +67,7 @@ v8_android_multi:
 
 android_multi: v8_android_multi
 	GYP_DEFINES="${ANDROID_PARAMETERS} ANDROID_ARCH=$(ANDROID_ARCH)" \
-	./make_gyp_wrapper.py --depth=. -f make-android -Dhost_arch=$(shell python third_party/v8/gypfiles/detect_v8_host_arch.py) -Iandroid-v8-options.gypi --generator-output=build -Gandroid_ndk_version=r9 libadblockplus.gyp
+	./make_gyp_wrapper.py --depth=. -f make-android -Dhost_arch=${HOST_ARCH} -Dtarget_arch=${ANDROID_ARCH} -Iandroid-v8-options.gypi --generator-output=build -Gandroid_ndk_version=r9 libadblockplus.gyp
 	$(ANDROID_NDK_ROOT)/ndk-build -C build installed_modules \
 	BUILDTYPE=Release \
 	APP_ABI=$(ANDROID_ABI) \
