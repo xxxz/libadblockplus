@@ -28,5 +28,5 @@ deps = open('v8/DEPS').read()
 Var = lambda name: vars[name]
 exec deps
 
-for dep in ['v8/base/trace_event/common', 'v8/build', 'v8/testing/gtest', 'v8/tools/gyp', 'v8/tools/clang', 'v8/third_party/icu']:
+for dep in ['v8/base/trace_event/common', 'v8/build', 'v8/testing/gtest', 'v8/tools/gyp', 'v8/tools/clang', 'v8/third_party/icu', 'v8/testing/gtest']:
 	fetch(deps[dep], dep)

@@ -22,11 +22,38 @@
       'inputs': ['ensure_dependencies.py'],
       'outputs': ['ensure_dependencies_phony_output'],
       'action': ['python', 'ensure_dependencies.py'],
+    }]
+  },
+  {
+    'target_name': 'build-v8',
+    'type': 'none',
+    'dependencies': ['ensure_dependencies'],
+    'actions': [{
+      'action_name': 'build-v8',
+      'inputs': ['build-v8.cmd'],
+      'outputs': [
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libplatform.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_0.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_1.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_2.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_base_3.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libbase.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_libsampler.lib',
+        'build/<(target_arch)/v8/build/<(CONFIGURATION_NAME)/v8_nosnapshot.lib',
+      ],
+      'action': [
+        'cmd',
+        '/C',
+        'build-v8.cmd',
+        '<(target_arch)',
+        '<(CONFIGURATION_NAME)'
+      ]
     }],
   },
   {
     'target_name': 'libadblockplus',
     'type': '<(library)',
+    'dependencies': ['build-v8'],
     'include_dirs': [
       'include',
       'third_party/v8/include',
@@ -52,7 +79,12 @@
       '<(INTERMEDIATE_DIR)/adblockplus.js.cpp'
     ],
     'direct_dependent_settings': {
-      'include_dirs': ['include']
+      'include_dirs': ['include'],
+      'msvs_settings': {
+        'VCLinkerTool': {
+          'AdditionalLibraryDirectories': ['v8/build/<(CONFIGURATION_NAME)'],
+        }
+      },
     },
     'conditions': [
       ['OS=="linux"', {
@@ -65,6 +97,21 @@
             'v8/out/<(CONFIGURATION_NAME)/libv8_libsampler.a',
           ]
         }
+      }],
+      ['OS=="win"', {
+        'link_settings': {
+          'libraries': [
+            '-lv8_libplatform',
+            '-lv8_base_0',
+            '-lv8_base_1',
+            '-lv8_base_2',
+            '-lv8_base_3',
+            '-lv8_libbase',
+            '-lv8_libsampler',
+            '-lv8_nosnapshot',
+            '-lwinmm'
+          ],
+        },
       }],
       ['OS=="android"', {
         'user_libraries': [

@@ -22,6 +22,27 @@
         'ldflags': [ '-pthread', ],
       },
     }],
+    ['OS=="win"', {
+      'target_defaults': {
+        'conditions': [
+          ['target_arch=="x64"', {
+            'msvs_configuration_platform': 'x64'
+          }]
+        ],
+        'msvs_configuration_attributes': {
+          'CharacterSet': '1',
+        },
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'WarningLevel': 0,
+          },
+        },
+        'msbuild_toolset': 'v140_xp',
+        'defines': [
+          'WIN32',
+        ],
+      }
+    }],
     ['OS=="mac"', {
       'xcode_settings': {
         'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
@@ -53,7 +74,38 @@
 
   'target_defaults': {
     'configurations': {
-      'Release': {}
+      'Debug': {
+        'defines': [
+          'DEBUG'
+        ],
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'conditions': [
+              ['component=="shared_library"', {
+                'RuntimeLibrary': '3',  #/MDd
+              }, {
+                'RuntimeLibrary': '1',  #/MTd
+              }
+            ]]
+          }
+        }
+      },
+      'Release': {
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'conditions': [
+              ['component=="shared_library"', {
+                'RuntimeLibrary': '2',  #/MD
+              }, {
+                'RuntimeLibrary': '0',  #/MT
+              }
+            ]]
+          }
+        }
+      }
+    },
+    'link_settings': {
+      'libraries': ['-lDbgHelp'],
     },
     'msvs_cygwin_shell': 0,
     'target_conditions': [
