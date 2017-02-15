@@ -16,19 +16,8 @@
   [
     'OS=="win"', {
       'targets': [{
-        'target_name': 'ensure_dependencies',
-        'type': 'none',
-        'actions': [{
-          'action_name': 'ensure_dependencies',
-          'inputs': ['ensure_dependencies.py'],
-          'outputs': ['ensure_dependencies_phony_output'],
-          'action': ['python', 'ensure_dependencies.py'],
-        }]
-      },
-      {
         'target_name': 'build-v8',
         'type': 'none',
-        'dependencies': ['ensure_dependencies'],
         'actions': [{
           'action_name': 'build-v8',
           'inputs': ['build-v8.cmd'],
@@ -57,11 +46,6 @@
   'targets': [{
     'target_name': 'libadblockplus',
     'type': '<(library)',
-    'conditions': [[
-      'OS=="win"', {
-        'dependencies': ['build-v8'],
-      }
-    ]],
     'xcode_settings':{},
     'include_dirs': [
       'include',
@@ -108,6 +92,7 @@
         }
       }],
       ['OS=="win"', {
+        'dependencies': ['build-v8'],
         'link_settings': {
           'libraries': [
             '-lv8_libplatform',
