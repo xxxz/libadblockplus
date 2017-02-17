@@ -1,4 +1,5 @@
-HOST_ARCH=$(shell python ./third_party/v8/gypfiles/detect_v8_host_arch.py)
+V8_DIR :=$(shell pwd -L)/third_party/v8/
+HOST_ARCH :=$(shell python ${V8_DIR}gypfiles/detect_v8_host_arch.py)
 ARCH := ${HOST_ARCH}
 
 ifndef OS
@@ -14,9 +15,11 @@ ANDROID_PARAMETERS = OS=android
 ifneq ($(ANDROID_ARCH),)
 ifeq ($(ANDROID_ARCH),arm)
 ANDROID_PARAMETERS += target_arch=arm
+ANDROID_PARAMETERS += v8_target_arch=arm
 ANDROID_ABI = armeabi-v7a
 else ifeq ($(ANDROID_ARCH),ia32)
-ANDROID_PARAMETERS += target_arch=x86 android_target_arch=x86
+ANDROID_PARAMETERS += target_arch=x86
+ANDROID_PARAMETERS += v8_target_arch=x86
 ANDROID_ABI = x86
 else
 $(error "Unsupported Android architecture: $(ANDROID_ARCH))
@@ -35,7 +38,7 @@ ensure_dependencies:
 	python ensure_dependencies.py
 
 v8: ensure_dependencies
-	third_party/gyp/gyp --depth=. -f make -I v8.gypi --generator-output=build/v8 -Dtarget_arch=${ARCH} -Dhost_arch=${HOST_ARCH} third_party/v8/src/v8.gyp
+	third_party/gyp/gyp --depth=. -f make -I v8.gypi --generator-output=build/v8 -Dtarget_arch=${ARCH} -Dhost_arch=${HOST_ARCH} ${V8_DIR}src/v8.gyp
 	make -C build/v8 v8_maybe_snapshot v8_libplatform v8_libsampler
 
 all: v8
@@ -62,13 +65,27 @@ android_arm:
 	ANDROID_ARCH="arm" $(MAKE) android_multi
 
 ifneq ($(ANDROID_ARCH),)
-v8_android_multi:
-	make -C third_party/v8 -f Makefile.android android_${ANDROID_ARCH}.release snapshot=off ARCH=android_${ANDROID_ARCH} MODE=release OUTDIR=../../build/ GYPFLAGS=-I../../android-v8-options.gypi
+v8_android_multi: ensure_dependencies
+	cd third_party/v8 && GYP_GENERATORS=make-android \
+	  GYP_DEFINES=${ANDROID_PARAMETERS} \
+	  PYTHONPATH="${V8_DIR}tools/generate_shim_headers:${V8_DIR}gypfiles:${PYTHONPATH}" \
+	  tools/gyp/gyp \
+	    --generator-output=../../build src/v8.gyp \
+	    -Igypfiles/standalone.gypi \
+	    --depth=. \
+	    -S.android_${ANDROID_ARCH}.release \
+	    -I../../android-v8-options.gypi
+	cd third_party/v8 && make \
+	  -C ../../build \
+	  -f Makefile.android_${ANDROID_ARCH}.release \
+	  v8_maybe_snapshot v8_libplatform v8_libsampler \
+	  BUILDTYPE=Release \
+	  builddir=${V8_DIR}build/android_${ANDROID_ARCH}.release
 
 android_multi: v8_android_multi
-	GYP_DEFINES="${ANDROID_PARAMETERS} ANDROID_ARCH=$(ANDROID_ARCH)" \
+	echo GYP_DEFINES="${ANDROID_PARAMETERS} ANDROID_ARCH=$(ANDROID_ARCH)" \
 	./make_gyp_wrapper.py --depth=. -f make-android -Dhost_arch=${HOST_ARCH} -Dtarget_arch=${ANDROID_ARCH} -Iandroid-v8-options.gypi --generator-output=build -Gandroid_ndk_version=r9 libadblockplus.gyp
-	$(ANDROID_NDK_ROOT)/ndk-build -C build installed_modules \
+	echo $(ANDROID_NDK_ROOT)/ndk-build -C build installed_modules \
 	BUILDTYPE=Release \
 	APP_ABI=$(ANDROID_ABI) \
 	APP_PLATFORM=android-9 \
