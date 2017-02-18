@@ -13,13 +13,11 @@ endif
 
 ANDROID_PARAMETERS = OS=android
 ifneq ($(ANDROID_ARCH),)
+ANDROID_PARAMETERS += target_arch=${ANDROID_ARCH}
+ANDROID_PARAMETERS += v8_target_arch=${ANDROID_ARCH}
 ifeq ($(ANDROID_ARCH),arm)
-ANDROID_PARAMETERS += target_arch=arm
-ANDROID_PARAMETERS += v8_target_arch=arm
 ANDROID_ABI = armeabi-v7a
 else ifeq ($(ANDROID_ARCH),ia32)
-ANDROID_PARAMETERS += target_arch=x86
-ANDROID_PARAMETERS += v8_target_arch=x86
 ANDROID_ABI = x86
 else
 $(error "Unsupported Android architecture: $(ANDROID_ARCH))
@@ -67,7 +65,7 @@ android_arm:
 ifneq ($(ANDROID_ARCH),)
 v8_android_multi: ensure_dependencies
 	cd third_party/v8 && GYP_GENERATORS=make-android \
-	  GYP_DEFINES=${ANDROID_PARAMETERS} \
+	  GYP_DEFINES="${ANDROID_PARAMETERS}" \
 	  PYTHONPATH="${V8_DIR}tools/generate_shim_headers:${V8_DIR}gypfiles:${PYTHONPATH}" \
 	  tools/gyp/gyp \
 	    --generator-output=../../build src/v8.gyp \
@@ -80,12 +78,20 @@ v8_android_multi: ensure_dependencies
 	  -f Makefile.android_${ANDROID_ARCH}.release \
 	  v8_maybe_snapshot v8_libplatform v8_libsampler \
 	  BUILDTYPE=Release \
-	  builddir=${V8_DIR}build/android_${ANDROID_ARCH}.release
+	  builddir=${V8_DIR}../../build/android_${ANDROID_ARCH}.release
 
-android_multi: v8_android_multi
-	echo GYP_DEFINES="${ANDROID_PARAMETERS} ANDROID_ARCH=$(ANDROID_ARCH)" \
+v8_android_multi_linux_${ANDROID_ARCH}: v8_android_multi
+
+v8_android_multi_mac_ia32: v8_android_multi
+	find build/android_ia32.release/ -depth 1 -iname \*.a -exec ${ANDROID_NDK_ROOT}/toolchains/x86-4.9/prebuilt/darwin-x86_64/bin/i686-linux-android-ranlib {} \;
+
+v8_android_multi_mac_arm: v8_android_multi
+	find build/android_arm.release/ -depth 1 -iname \*.a -exec ${ANDROID_NDK_ROOT}/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64/bin/arm-linux-androideabi-ranlib {} \;
+
+android_multi: v8_android_multi_${OS}_${ANDROID_ARCH}
+	GYP_DEFINES="${ANDROID_PARAMETERS} ANDROID_ARCH=$(ANDROID_ARCH)" \
 	./make_gyp_wrapper.py --depth=. -f make-android -Dhost_arch=${HOST_ARCH} -Dtarget_arch=${ANDROID_ARCH} -Iandroid-v8-options.gypi --generator-output=build -Gandroid_ndk_version=r9 libadblockplus.gyp
-	echo $(ANDROID_NDK_ROOT)/ndk-build -C build installed_modules \
+	$(ANDROID_NDK_ROOT)/ndk-build -C build installed_modules \
 	BUILDTYPE=Release \
 	APP_ABI=$(ANDROID_ABI) \
 	APP_PLATFORM=android-9 \
